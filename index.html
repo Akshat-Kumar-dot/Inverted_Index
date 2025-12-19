@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inverted Index Search Engine</title>
+
+<style>
+    :root {
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --text-main: #1e293b;
+        --text-dim: #64748b;
+        --accent: #334155;
+        --accent-hover: #0f172a;
+        --danger: #dc2626;
+        --danger-hover: #991b1b;
+        --input-bg: #f1f5f9;
+        --border: #e2e8f0;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        background-color: var(--bg-color);
+        /* Background dot pattern */
+        background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+        background-size: 24px 24px;
+        
+        color: var(--text-main);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 40px 20px;
+    }
+
+    h1 {
+        font-size: 2.4rem;
+        margin-bottom: 40px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        text-shadow: 0 2px 5px rgba(255,255,255,0.8);
+    }
+
+    .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        width: 100%;
+        max-width: 1100px;
+    }
+
+    @media (max-width: 850px) {
+        .container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 32px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card h2 {
+        font-size: 1.25rem;
+        margin-bottom: 24px;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 12px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    input[type="file"] {
+        background: var(--input-bg);
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        width: 100%;
+        color: var(--text-dim);
+    }
+
+    input[type="text"] {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        padding: 14px 16px;
+        border-radius: 8px;
+        font-size: 1rem;
+        margin-bottom: 16px;
+        color: var(--text-main);
+        width: 100%;
+        transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(51,65,85,0.1);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+    }
+
+    button {
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        flex: 1;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+    button:hover {
+        background-color: var(--accent-hover);
+    }
+
+    button:disabled {
+        background-color: var(--text-dim);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+    button.danger {
+        background-color: transparent;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+    }
+
+    button.danger:hover {
+        background-color: var(--danger);
+        color: white;
+    }
+
+    .status {
+        margin-top: 16px;
+        font-size: 0.9rem;
+        color: var(--text-dim);
+        min-height: 1.2rem;
+        font-family: monospace;
+    }
+
+    .results-box {
+        margin-top: 20px;
+        background: #f1f5f9; /* Changed to Light Grey */
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        
+        /* Auto height behavior */
+        height: auto;
+        min-height: 60px; /* Starts small */
+        max-height: 300px; /* Cap height to trigger scrollbar */
+    }
+
+    .results-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 12px;
+        font-weight: 700;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: 'Consolas', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        overflow-y: auto; /* Scrollbar appears here if content grows */
+        color: #334155; /* Dark grey text instead of green */
+        margin: 0;
+    }
+    
+    /* Custom scrollbar for webkit browsers */
+    pre::-webkit-scrollbar {
+        width: 8px;
+    }
+    pre::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    pre::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 4px;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Inverted Index Search Engine</h1>
+
+<div class="container">
+
+    <!-- Upload Card -->
+    <div class="card">
+        <h2>Upload Documents</h2>
+
+        <input type="file" id="files" multiple disabled>
+
+        <div class="btn-group">
+            <button id="uploadBtn" onclick="upload()" disabled>Upload</button>
+            <button id="resetBtn" class="danger" onclick="resetIndex()" disabled>Reset Index</button>
+        </div>
+
+        <p id="upload-status" class="status">System: Loading WASM...</p>
+    </div>
+
+    <!-- Search Card -->
+    <div class="card">
+        <h2>Search Query</h2>
+
+        <input type="text" id="query" placeholder="Enter search query..." onkeypress="handleKey(event)" disabled>
+        <button id="searchBtn" onclick="runSearch()" disabled>Search</button>
+
+        <div class="results-box">
+            <div class="results-title">Output Console</div>
+            <pre id="output">Waiting for input...</pre>
+        </div>
+    </div>
+
+</div>
+
+<!-- WASM Glue Code -->
+<script>
+    let docMap = {};
+    let nextDocId = 1;
+    let isReady = false;
+
+    var Module = {
+        onRuntimeInitialized: function() {
+            console.log("WASM Initialized");
+            isReady = true;
+            document.getElementById('files').disabled = false;
+            document.getElementById('uploadBtn').disabled = false;
+            document.getElementById('resetBtn').disabled = false;
+            document.getElementById('query').disabled = false;
+            document.getElementById('searchBtn').disabled = false;
+            document.getElementById('upload-status').innerText = "System: Ready.";
+            
+            // Initialize C Hash Table
+            Module.ccall('index_init', null, [], []);
+        }
+    };
+
+    async function upload() {
+        const fileInput = document.getElementById('files');
+        const status = document.getElementById('upload-status');
+        const files = fileInput.files;
+
+        if (files.length === 0) {
+            status.innerText = "Error: No files selected.";
+            return;
+        }
+
+        status.innerText = "Indexing...";
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            try {
+                const text = await file.text();
+                const virtualName = "/" + file.name.replace(/\s+/g, "_");
+                
+                // Write to WASM filesystem
+                Module.FS.writeFile(virtualName, text);
+                
+                // Index via C
+                Module.ccall('index_file', null, ['string', 'number'], [virtualName, nextDocId]);
+                
+                docMap[nextDocId] = file.name;
+                nextDocId++;
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        status.innerText = `Success: Indexed ${files.length} files. Total Docs: ${nextDocId - 1}`;
+    }
+
+    function runSearch() {
+        const query = document.getElementById('query').value.trim();
+        const output = document.getElementById('output');
+
+        if (!query) {
+            output.innerText = "> Error: Query is empty.";
+            return;
+        }
+
+        try {
+            const jsonPtr = Module.ccall('search_query_api', 'string', ['string'], [query]);
+            const data = JSON.parse(jsonPtr);
+            
+            if (!data.results || data.results.length === 0) {
+                output.innerText = `> Query: "${query}"\n> Status: No matches found.`;
+                return;
+            }
+
+            let resText = `> Query: "${query}"\n> Matches: ${data.results.length}\n\n`;
+            data.results.forEach(res => {
+                const name = docMap[res.doc_id] || `Doc #${res.doc_id}`;
+                resText += `FILE: ${name}\n`;
+                resText += `  Freq: ${res.frequency}\n`;
+                resText += `  Pos: [ ${res.positions.join(', ')} ]\n\n`;
+            });
+            output.innerText = resText;
+
+        } catch (e) {
+            output.innerText = "> Error: Search failed in WASM.";
+            console.error(e);
+        }
+    }
+
+    function resetIndex() {
+        if(!confirm("Clear all data?")) return;
+        Module.ccall('index_clear', null, [], []);
+        docMap = {};
+        nextDocId = 1;
+        document.getElementById('upload-status').innerText = "System: Index Cleared.";
+        document.getElementById('output').innerText = "System Reset.";
+        document.getElementById('files').value = "";
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter') runSearch();
+    }
+</script>
+
+<script src="inverted_index.js"></script>
+
+</body>
+</html>
